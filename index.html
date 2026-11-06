@@ -447,6 +447,8 @@
   <script src="wifi-config.js"></script>
   <script src="meniny.js"></script>
   <script>
+    setInterval(() => window.location.reload(), 10 * 60 * 1000);
+
     const timeElement = document.getElementById("time");
     const dateElement = document.getElementById("date");
     const greetingElement = document.getElementById("greeting");

@@ -2,6 +2,8 @@
 
 Otvorte `index.html` v prehliadači na kioskovej obrazovke. Všetky súbory ponechajte v rovnakom priečinku.
 
+Stránka sa automaticky obnoví každých 10 minút.
+
 ## Wi-Fi pre hostí
 
 V súbore `wifi-config.js` doplňte heslo do položky `password` a obnovte stránku. Úvodzovky a spätné lomky v hesle musia byť v JavaScripte zapísané ako `\"` a `\\`. QR kód sa bez hesla nezobrazí. Nastavenie je určené pre zabezpečenie WPA/WPA2/WPA3.
