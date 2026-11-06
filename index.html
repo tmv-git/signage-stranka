@@ -285,6 +285,10 @@
     .weather-icon:empty { display: none; }
     .weather-value { font-size: clamp(20px, 1.6vw, 30px); line-height: 1.1; }
     .weather-detail { margin-top: 5px !important; color: #557383; font-size: 12px; line-height: 1.3; }
+    .sun-times { display: flex; justify-content: center; gap: clamp(16px, 2vw, 32px); margin-top: 14px; }
+    .sun-item { display: flex; align-items: baseline; gap: 8px; }
+    .sun-label { color: #557383; font-size: clamp(12px, .9vw, 16px); }
+    .sun-time { color: #18384b; font-size: clamp(16px, 1.2vw, 22px); font-variant-numeric: tabular-nums; }
     .info-detail { margin-top: 7px !important; color: #557383; font-size: 14px; line-height: 1.4; }
     .wifi-name { font-size: clamp(18px, 1.5vw, 24px); overflow-wrap: anywhere; }
     .qr-code { flex: 0 0 auto; line-height: 0; }
@@ -330,6 +334,10 @@
       .weather-icon { font-size: clamp(32px, 1.3vw, 50px); }
       .weather-value { font-size: clamp(32px, 1.45vw, 56px); }
       .weather-detail { font-size: clamp(17px, .65vw, 25px); }
+      .sun-times { gap: 36px; margin-top: 22px; }
+      .sun-item { gap: 12px; }
+      .sun-label { font-size: clamp(20px, .8vw, 31px); }
+      .sun-time { font-size: clamp(26px, 1.1vw, 42px); }
       .info-detail { font-size: clamp(19px, .7vw, 27px); }
       .wifi-name { font-size: clamp(26px, 1vw, 38px); }
       .qr-code svg { width: clamp(125px, 4.7vw, 180px); height: clamp(125px, 4.7vw, 180px); }
@@ -409,6 +417,10 @@
         <div class="clock">
           <p class="clock-label">Aktuálny čas</p>
           <time class="time" id="time">--:--:--</time>
+          <div class="sun-times" aria-label="Východ a západ slnka v Trenčíne">
+            <span class="sun-item"><span class="sun-label">Východ slnka</span><time class="sun-time" id="sunrise">--:--</time></span>
+            <span class="sun-item"><span class="sun-label">Západ slnka</span><time class="sun-time" id="sunset">--:--</time></span>
+          </div>
           <p class="date" id="date">Načítavam dátum...</p>
           <p class="nameday"><span aria-hidden="true">🎉 </span><span id="nameday">Načítavam meniny...</span></p>
         </div>
@@ -453,29 +465,79 @@
     const dateElement = document.getElementById("date");
     const greetingElement = document.getElementById("greeting");
     const namedayElement = document.getElementById("nameday");
+    const timeZone = "Europe/Bratislava";
+    let synchronizedTime = null;
+    let synchronizedAt = 0;
     let displayedNamedayDate = "";
     const timeFormatter = new Intl.DateTimeFormat("sk-SK", {
+      timeZone,
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
       hourCycle: "h23"
     });
     const dateFormatter = new Intl.DateTimeFormat("sk-SK", {
+      timeZone,
       weekday: "long",
       day: "numeric",
       month: "long",
       year: "numeric"
     });
+    const dateKeyFormatter = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      month: "2-digit",
+      day: "2-digit"
+    });
+
+    async function synchronizeClock() {
+      const requestStartedAt = performance.now();
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      try {
+        const response = await fetch("https://www.timeapi.io/api/Time/current/zone?timeZone=UTC", {
+          cache: "no-store",
+          signal: controller.signal
+        });
+        if (!response.ok) throw new Error(`Časová služba: HTTP ${response.status}`);
+        const data = await response.json();
+        const fields = [data.year, data.month, data.day, data.hour, data.minute, data.seconds, data.milliSeconds];
+        if (data.timeZone !== "UTC" || !fields.every(Number.isInteger) ||
+            data.month < 1 || data.month > 12 || data.day < 1 || data.day > 31 ||
+            data.hour < 0 || data.hour > 23 || data.minute < 0 || data.minute > 59 ||
+            data.seconds < 0 || data.seconds > 59 || data.milliSeconds < 0 || data.milliSeconds > 999) {
+          throw new Error("Časová služba vrátila neplatný čas.");
+        }
+        const timestamp = Date.UTC(
+          data.year, data.month - 1, data.day, data.hour, data.minute, data.seconds, data.milliSeconds
+        );
+        const utcDate = new Date(timestamp);
+        if (utcDate.getUTCFullYear() !== data.year || utcDate.getUTCMonth() !== data.month - 1 ||
+            utcDate.getUTCDate() !== data.day || utcDate.getUTCHours() !== data.hour ||
+            utcDate.getUTCMinutes() !== data.minute || utcDate.getUTCSeconds() !== data.seconds) {
+          throw new Error("Časová služba vrátila neplatný dátum.");
+        }
+        const responseReceivedAt = performance.now();
+        synchronizedTime = timestamp;
+        synchronizedAt = (requestStartedAt + responseReceivedAt) / 2;
+        updateClock();
+      } catch (error) {
+        console.error("Nepodarilo sa synchronizovať čas z internetu; použije sa čas zariadenia.", error);
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
 
     function updateClock() {
-      const now = new Date();
-      const hour = now.getHours();
+      const now = synchronizedTime === null ?
+        new Date() : new Date(synchronizedTime + performance.now() - synchronizedAt);
+      const hour = Number(timeFormatter.formatToParts(now).find(part => part.type === "hour").value);
       timeElement.textContent = timeFormatter.format(now);
       timeElement.dateTime = now.toISOString();
       dateElement.textContent = dateFormatter.format(now);
       greetingElement.textContent = hour < 5 ? "Dobrú noc" :
         hour < 11 ? "Dobré ráno" : hour < 18 ? "Dobrý deň" : "Dobrý večer";
-      const dateKey = `${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+      const dateParts = dateKeyFormatter.formatToParts(now);
+      const dateKey = `${dateParts.find(part => part.type === "month").value}${dateParts.find(part => part.type === "day").value}`;
       if (dateKey !== displayedNamedayDate) {
         displayedNamedayDate = dateKey;
         if (typeof namedays === "undefined" || !Object.prototype.hasOwnProperty.call(namedays, dateKey)) {
@@ -490,6 +552,8 @@
 
     updateClock();
     setInterval(updateClock, 1000);
+    synchronizeClock();
+    setInterval(synchronizeClock, 5 * 60 * 1000);
 
     const photos = [
       "img/IMG_20191105_081034.jpg",
@@ -560,6 +624,28 @@
       return "";
     }
 
+    function setSunTimesUnavailable() {
+      document.getElementById("sunrise").textContent = "--:--";
+      document.getElementById("sunset").textContent = "--:--";
+    }
+
+    function updateSunTimes(daily) {
+      const sunrise = daily?.sunrise?.[0];
+      const sunset = daily?.sunset?.[0];
+      const timePattern = /^\d{4}-\d{2}-\d{2}T(\d{2}):(\d{2})$/;
+      const sunriseMatch = typeof sunrise === "string" ? timePattern.exec(sunrise) : null;
+      const sunsetMatch = typeof sunset === "string" ? timePattern.exec(sunset) : null;
+      if (!sunriseMatch || !sunsetMatch ||
+          Number(sunriseMatch[1]) > 23 || Number(sunriseMatch[2]) > 59 ||
+          Number(sunsetMatch[1]) > 23 || Number(sunsetMatch[2]) > 59) {
+        console.error("Služba počasia vrátila neplatný čas východu alebo západu slnka.");
+        setSunTimesUnavailable();
+        return;
+      }
+      document.getElementById("sunrise").textContent = `${sunriseMatch[1]}:${sunriseMatch[2]}`;
+      document.getElementById("sunset").textContent = `${sunsetMatch[1]}:${sunsetMatch[2]}`;
+    }
+
     async function updateCityWeather(city) {
       const weatherValue = document.getElementById(`weather-${city.id}`);
       const weatherDetail = document.getElementById(`weather-${city.id}-detail`);
@@ -567,7 +653,8 @@
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);
       try {
-        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&current=temperature_2m%2Cweather_code%2Cis_day&timezone=Europe%2FBratislava`, {
+        const dailyParameters = city.id === "trencin" ? "&daily=sunrise%2Csunset&forecast_days=1" : "";
+        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&current=temperature_2m%2Cweather_code%2Cis_day&timezone=Europe%2FBratislava${dailyParameters}`, {
           signal: controller.signal
         });
         if (!response.ok) throw new Error(`Počasie: HTTP ${response.status}`);
@@ -580,11 +667,13 @@
         weatherValue.textContent = `${Math.round(data.current.temperature_2m)} °C`;
         weatherDetail.textContent = weatherDescriptions[data.current.weather_code] || "Stav počasia nie je známy";
         icon.textContent = weatherIcon(data.current.weather_code, data.current.is_day === 1);
+        if (city.id === "trencin") updateSunTimes(data.daily);
       } catch (error) {
         console.error(`Nepodarilo sa načítať počasie pre ${city.name}:`, error);
         weatherValue.textContent = "-- °C";
         weatherDetail.textContent = "Nedostupné";
         icon.textContent = "";
+        if (city.id === "trencin") setSunTimesUnavailable();
       } finally {
         clearTimeout(timeout);
       }

@@ -4,6 +4,8 @@ Otvorte `index.html` v prehliadači na kioskovej obrazovke. Všetky súbory pone
 
 Stránka sa automaticky obnoví každých 10 minút.
 
+Čas sa synchronizuje cez internet podľa časového pásma Europe/Bratislava každých 5 minút. Pri výpadku internetu sa použije čas zariadenia.
+
 ## Wi-Fi pre hostí
 
 V súbore `wifi-config.js` doplňte heslo do položky `password` a obnovte stránku. Úvodzovky a spätné lomky v hesle musia byť v JavaScripte zapísané ako `\"` a `\\`. QR kód sa bez hesla nezobrazí. Nastavenie je určené pre zabezpečenie WPA/WPA2/WPA3.
@@ -12,7 +14,7 @@ Heslo je uložené v súbore ako čitateľný text a obsahuje ho aj QR kód, pre
 
 ## Počasie
 
-Počasie pre Trenčín, Bratislavu, Žilinu, Nitru, Košice a Banskú Bystricu poskytuje [Open-Meteo](https://open-meteo.com/). Na načítanie je potrebné internetové pripojenie; údaje sa obnovujú každých 15 minút. Pri výpadku sa pri príslušnom meste zobrazí upozornenie a stránka to skúsi znova pri ďalšom obnovení.
+Počasie pre Trenčín, Bratislavu, Žilinu, Nitru, Košice a Banskú Bystricu poskytuje [Open-Meteo](https://open-meteo.com/). Načítavajú sa aj časy východu a západu slnka pre Trenčín. Na načítanie je potrebné internetové pripojenie; údaje sa obnovujú každých 15 minút. Pri výpadku sa pri príslušnom meste zobrazí upozornenie a stránka to skúsi znova pri ďalšom obnovení.
 
 Ikony vyjadrujú stav počasia a pri jasnej oblohe rozlišujú deň a noc. Ich vzhľad závisí od podpory emoji v zariadení.
 
