@@ -94,9 +94,30 @@
       gap: 4vw;
       padding: 3vh clamp(20px, 2.5vw, 40px);
       border-radius: 20px;
-      background:
-        linear-gradient(90deg, rgba(243, 248, 250, .92) 5%, rgba(243, 248, 250, .62) 58%, rgba(243, 248, 250, .38)),
-        url("img/IMG_20191105_081034.jpg") center 55% / cover;
+      isolation: isolate;
+      overflow: hidden;
+      background: #f3f8fa;
+    }
+
+    .photo-layer, .content::before {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .photo-layer {
+      z-index: -2;
+      background: center 55% / cover no-repeat;
+      opacity: 0;
+      transition: opacity 1.5s ease-in-out;
+    }
+
+    .photo-layer.is-visible { opacity: 1; }
+
+    .content::before {
+      z-index: -1;
+      content: "";
+      background: linear-gradient(90deg, rgba(243, 248, 250, .92) 5%, rgba(243, 248, 250, .62) 58%, rgba(243, 248, 250, .38));
     }
 
     .welcome { position: relative; z-index: 1; }
@@ -273,6 +294,36 @@
       background: #167494;
     }
 
+    @media (min-width: 2000px) and (min-height: 900px) and (orientation: landscape) {
+      .screen { padding: clamp(64px, 2.5vw, 96px) clamp(84px, 3vw, 116px); }
+      .brand-logo { width: clamp(150px, 6.25vw, 240px); }
+      .top-label, .eyebrow, .footer { font-size: clamp(18px, .7vw, 27px); }
+      .content { padding: 3vh clamp(40px, 2vw, 76px); }
+      .eyebrow { gap: 24px; }
+      .eyebrow::before { width: 64px; height: 2px; }
+      h1 { margin: 40px 0; font-size: clamp(180px, 8.6vw, 330px); }
+      .intro { max-width: 1000px; font-size: clamp(28px, 1.4vw, 54px); }
+      .message { gap: 30px; margin-top: clamp(48px, 4vh, 86px); font-size: clamp(24px, 1vw, 38px); }
+      .message-icon { flex-basis: 80px; height: 80px; font-size: 38px; }
+      .orbit { width: min(78%, 850px); }
+      .orbit-dot { width: 22px; height: 22px; }
+      .clock-label { margin-bottom: 30px; font-size: clamp(18px, .7vw, 27px); }
+      .time { font-size: clamp(120px, 6vw, 230px); }
+      .date { margin-top: 32px; font-size: clamp(24px, 1.05vw, 40px); }
+      .info-strip { gap: 28px; margin-bottom: 36px; }
+      .info-card { gap: 32px; min-height: 220px; padding: 32px 38px; }
+      .info-title { margin-bottom: 18px !important; font-size: clamp(17px, .65vw, 25px); }
+      .weather-grid { gap: 20px; }
+      .weather-name { font-size: clamp(19px, .75vw, 29px); }
+      .weather-value { font-size: clamp(32px, 1.45vw, 56px); }
+      .weather-detail { font-size: clamp(17px, .65vw, 25px); }
+      .info-detail { font-size: clamp(19px, .7vw, 27px); }
+      .wifi-name { font-size: clamp(26px, 1vw, 38px); }
+      .qr-code svg { width: clamp(125px, 4.7vw, 180px); height: clamp(125px, 4.7vw, 180px); }
+      .footer { padding-top: 36px; }
+      .status-dot { width: 12px; height: 12px; }
+    }
+
     @media (max-width: 1100px) {
       .weather-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
@@ -283,11 +334,10 @@
         align-content: center;
         gap: 5vh;
         padding: 7vh 24px;
-        background:
-          linear-gradient(rgba(243, 248, 250, .85), rgba(243, 248, 250, .55)),
-          url("img/IMG_20191105_081034.jpg") center / cover;
       }
 
+      .content::before { background: linear-gradient(rgba(243, 248, 250, .85), rgba(243, 248, 250, .55)); }
+      .photo-layer { background-position: center; }
       .clock-area { min-height: 0; aspect-ratio: 1.3; }
       .orbit { width: min(75%, 420px); }
       h1 { font-size: clamp(64px, 14vw, 120px); }
@@ -313,6 +363,10 @@
       h1 { font-size: clamp(58px, 8vw, 100px); margin: 18px 0; }
       .message { margin-top: 24px; }
     }
+
+    @media (prefers-reduced-motion: reduce) {
+      .photo-layer { transition: none; }
+    }
   </style>
 </head>
 <body>
@@ -325,6 +379,8 @@
     </header>
 
     <section class="content" aria-label="Uvítanie">
+      <div class="photo-layer is-visible" id="photo-first" style="background-image: url('img/IMG_20191105_081034.jpg')" aria-hidden="true"></div>
+      <div class="photo-layer" id="photo-second" aria-hidden="true"></div>
       <div class="welcome">
         <div class="eyebrow" id="greeting">Vitajte</div>
         <h1>Vitajte<span>.</span></h1>
@@ -404,6 +460,43 @@
 
     updateClock();
     setInterval(updateClock, 1000);
+
+    const photos = [
+      "img/IMG_20191105_081034.jpg",
+      "img/IMG_20191105_080442.jpg",
+      "img/IMG_20191105_080806.jpg",
+      "img/IMG_20191105_080945.jpg",
+      "img/zpmv_1.jpg",
+      "img/zpmv_3.jpg"
+    ];
+    const photoLayers = [document.getElementById("photo-first"), document.getElementById("photo-second")];
+    let photoIndex = 0;
+    let visiblePhotoLayer = 0;
+    let photoLoading = false;
+
+    function showNextPhoto() {
+      if (photoLoading) return;
+      photoLoading = true;
+      const nextIndex = (photoIndex + 1) % photos.length;
+      const image = new Image();
+      image.onload = () => {
+        const nextLayer = 1 - visiblePhotoLayer;
+        photoLayers[nextLayer].style.backgroundImage = `url("${photos[nextIndex]}")`;
+        photoLayers[nextLayer].classList.add("is-visible");
+        photoLayers[visiblePhotoLayer].classList.remove("is-visible");
+        visiblePhotoLayer = nextLayer;
+        photoIndex = nextIndex;
+        photoLoading = false;
+      };
+      image.onerror = () => {
+        console.error(`Nepodarilo sa načítať fotografiu: ${photos[nextIndex]}`);
+        photoIndex = nextIndex;
+        photoLoading = false;
+      };
+      image.src = photos[nextIndex];
+    }
+
+    setInterval(showNextPhoto, 15000);
 
     const weatherCities = [
       { id: "trencin", name: "Trenčín", latitude: 48.8945, longitude: 18.0444 },

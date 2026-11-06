@@ -14,4 +14,8 @@ Počasie pre Trenčín, Bratislavu, Žilinu, Nitru, Košice a Banskú Bystricu p
 
 QR kód sa vytvára lokálne pomocou knižnice qrcode-generator; jej licencia je v súbore `qrcode-LICENSE.txt`.
 
+## Fotografie
+
+Fotografie v uvítacej časti sa striedajú každých 15 sekúnd. Ich zoznam a poradie možno upraviť v poli `photos` v súbore `index.html`. Prvá fotografia je nastavená aj priamo v HTML, aby sa zobrazila ihneď po načítaní stránky.
+
 OK
