@@ -13,3 +13,5 @@ Heslo je uložené v súbore ako čitateľný text a obsahuje ho aj QR kód, pre
 Počasie pre Trenčín, Bratislavu, Žilinu, Nitru, Košice a Banskú Bystricu poskytuje [Open-Meteo](https://open-meteo.com/). Na načítanie je potrebné internetové pripojenie; údaje sa obnovujú každých 15 minút. Pri výpadku sa pri príslušnom meste zobrazí upozornenie a stránka to skúsi znova pri ďalšom obnovení.
 
 QR kód sa vytvára lokálne pomocou knižnice qrcode-generator; jej licencia je v súbore `qrcode-LICENSE.txt`.
+
+OK
