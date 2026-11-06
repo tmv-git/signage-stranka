@@ -12,7 +12,15 @@ Heslo je uložené v súbore ako čitateľný text a obsahuje ho aj QR kód, pre
 
 Počasie pre Trenčín, Bratislavu, Žilinu, Nitru, Košice a Banskú Bystricu poskytuje [Open-Meteo](https://open-meteo.com/). Na načítanie je potrebné internetové pripojenie; údaje sa obnovujú každých 15 minút. Pri výpadku sa pri príslušnom meste zobrazí upozornenie a stránka to skúsi znova pri ďalšom obnovení.
 
+Ikony vyjadrujú stav počasia a pri jasnej oblohe rozlišujú deň a noc. Ich vzhľad závisí od podpory emoji v zariadení.
+
 QR kód sa vytvára lokálne pomocou knižnice qrcode-generator; jej licencia je v súbore `qrcode-LICENSE.txt`.
+
+## Meniny
+
+Meniny sa zobrazujú podľa miestneho dátumu zariadenia a aktualizujú sa po polnoci. Údaje sú uložené v `meniny.js`, preto fungujú aj bez internetu. Dni bez mena v použitom kalendári sa zobrazia s upozornením.
+
+Údaje pochádzajú z projektu [SKCalendar](https://github.com/ezekiell/SKCalendar) (stav z roku 2016); licencia je v súbore `meniny-LICENSE.txt`. Zoznam možno upraviť v `meniny.js`.
 
 ## Fotografie
 
